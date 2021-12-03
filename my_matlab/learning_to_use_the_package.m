@@ -107,7 +107,7 @@ for k = 1:nreg
     axis_ratio = MajorAxisLen./MinorAxisLen;
     
     ncol=4;
-    figure
+    figure(1); clf;
     subplot(2,ncol,1+ncol)
     %plot([eddies_atomic.Stats.MajorAxisLength]./[eddies_atomic.Stats.MinorAxisLength],'*b');
     % eddies_stat = [eddies.Stats];
@@ -122,8 +122,8 @@ for k = 1:nreg
     % plot([0:20],[0:20],'--k');
     grid on
     %ylim([0 5])
-    %set(gca,'ytick',[0:1:5])
-    axis('square')
+    set(gca,'xtick',[0:1:5])
+    %axis('square')
     xlabel('SLA Amplitude (cm)')
     ylabel('$\sqrt{Area}$ (km)','interpreter','latex')
     ylim([0 2500]);
@@ -139,13 +139,14 @@ for k = 1:nreg
     % plot([0:20],[0:20],'--k');
     grid on
     % ylim([0 5])
-    % set(gca,'ytick',[0:1:5])
-    axis('square')
+     set(gca,'xtick',[1:1:5])
+    %axis('square')
     xlabel('axis ratio')
     ylabel('$\sqrt{Area}$ (km)','interpreter','latex')
     hb=colorbar;
     set(get(hb,'xlabel'),'String', 'SLA Amplitude (cm)');
     ylim([0 2500]);
+    xlim([0 5])
     
     subplot(2,ncol,3+ncol)
     scatter(axis_ratio, SSH_Amplitude,  20, sqrt(SurfArea),'filled');
@@ -155,11 +156,12 @@ for k = 1:nreg
     % hold on
     % plot([0:20],[0:20],'--k');
     grid on
-    axis('square')
+    %axis('square')
     xlabel('axis ratio')
     ylabel('SLA Amplitude (cm)')
     ylim([0 5])
-    set(gca,'ytick',[0:1:5])
+    xlim([0 5])
+    set(gca,'ytick',[0:1:5],'xtick',[1:5])
     hb=colorbar;
     set(get(hb,'xlabel'),'String', '$\sqrt{Area}$ (km)','interpreter','latex');
     
@@ -206,7 +208,7 @@ for k = 1:nreg
     xlim([-90 90]);
     xlabel('orientation (dgr)')
     ylabel('counts')
-    title('Eddy Orientation (0°: East-West)');
+    title({'Eddy Orientation'; '(0°: East-West)'});
     set(gca,'xtick',[-90:30:90]);
     grid on
     

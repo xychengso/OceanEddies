@@ -1,7 +1,7 @@
 % testing the eddy tracking code:
 
 % data: delayed time. 0.25°, daily 
-addpath(genpath('/Users/cirrus/Documents/GitHub/OceanEddies/eddyscan'));
+addpath(genpath('/Users/cirrus/Documents/GitHub/OceanEddies'));
 SSH_datadir1 ='/Volumes/GoogleDrive/My Drive/Research/ShallowCumulus/EUREC4A Cloud Winter School/Project_JupyterNoteBook/SLA_data';
 SSH_datadir2 = '/Users/cirrus/Documents/MATLAB/shallow_convection/Obsv/SLA_data/';
 
@@ -126,6 +126,7 @@ for k = 1:nreg
     axis('square')
     xlabel('SLA Amplitude (cm)')
     ylabel('$\sqrt{Area}$ (km)','interpreter','latex')
+    ylim([0 2500]);
     hb=colorbar;
     set(get(hb,'xlabel'),'String', 'axis ratio');
     
@@ -138,12 +139,13 @@ for k = 1:nreg
     % plot([0:20],[0:20],'--k');
     grid on
     % ylim([0 5])
-    % set(gca,'ytick',[0:1:5])
+     set(gca,'xtick',[1:1:5])
     axis('square')
     xlabel('axis ratio')
     ylabel('$\sqrt{Area}$ (km)','interpreter','latex')
     hb=colorbar;
     set(get(hb,'xlabel'),'String', 'SLA Amplitude (cm)');
+    ylim([0 2500]);
     
     subplot(2,ncol,3+ncol)
     scatter(axis_ratio, SSH_Amplitude,  20, sqrt(SurfArea),'filled');
@@ -157,7 +159,7 @@ for k = 1:nreg
     xlabel('axis ratio')
     ylabel('SLA Amplitude (cm)')
     ylim([0 5])
-    set(gca,'ytick',[0:1:5])
+    set(gca,'ytick',[0:1:5],'xtick',[1:5])
     hb=colorbar;
     set(get(hb,'xlabel'),'String', '$\sqrt{Area}$ (km)','interpreter','latex');
     
@@ -198,14 +200,14 @@ for k = 1:nreg
     set(gca,'xtick',[0:1:5]);
     grid on
     
-     subplot(2,ncol,4)
-    histogram(SSH_Amplitude,[0:0.2:5]);   % units is likely centimeter.
+    subplot(2,ncol,4)
+    histogram(Orientation,[-90:10:90]);   % units is likely centimeter.
     axis('square')
-    xlim([0 5]);
-    xlabel('SLA Amplitude (cm)')
+    xlim([-90 90]);
+    xlabel('orientation (dgr)')
     ylabel('counts')
-    title('Eddy Strength');
-    set(gca,'xtick',[0:1:5]);
+    title({'Eddy Orientation'; '(0°: East-West)'});
+    set(gca,'xtick',[-90:30:90]);
     grid on
     
     figsvdir = './my_matlab/Figs';
@@ -216,7 +218,8 @@ for k = 1:nreg
         '_' num2str((reg_box(3))) '_' num2str((reg_box(4)))];
     figname = [upper(region_name) '_region_eddy_statics_' locstr '.jpg'];
     
-    xc_savefig(gcf, figsvdir, figname, [0 0 12 8]);
+    %pause
+    xc_savefig(gcf, figsvdir, figname, [0 0 12 6]);
     
 end
 
