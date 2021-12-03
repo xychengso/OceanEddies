@@ -1,7 +1,7 @@
 % testing the eddy tracking code:
 
 % data: delayed time. 0.25°, daily 
-addpath(genpath('/Users/cirrus/Documents/GitHub/OceanEddies/eddyscan'));
+addpath(genpath('/Users/cirrus/Documents/GitHub/OceanEddies'));
 SSH_datadir1 ='/Volumes/GoogleDrive/My Drive/Research/ShallowCumulus/EUREC4A Cloud Winter School/Project_JupyterNoteBook/SLA_data';
 SSH_datadir2 = '/Users/cirrus/Documents/MATLAB/shallow_convection/Obsv/SLA_data/';
 
@@ -53,15 +53,15 @@ scan_multi(sla, double(ssh.latitude), double(ssh.longitude), ssh.time, 'anticyc'
 
 % visualize the results:
 % only show eddies in the selected area:
-atomic_box = [-58 -50, 10, 18];
+atomic_box = [-60 -50, 10, 18];
 cenNA_box = [-50, -40, 10, 18];
 eastNA_box = [-40, -30, 10, 18];
 
 region_names = {'atomic','cenNA','eastNA'};
 nreg = length(region_names);
-for k = 2:nreg
+for k = 1:nreg
     region_name = region_names{k};
-    eval(['atomic_box =' region_name '_box;']);
+    eval(['reg_box =' region_name '_box;']);
     % loop through all the data in the destination directory:
     files = dir([Eddy_destdir filesep 'anticyc*.mat']);
     filenames = {files.name};
@@ -69,8 +69,8 @@ for k = 2:nreg
         matFN = filenames{i};
         load([Eddy_destdir filesep matFN]);
         
-        lon_mask = [eddies.Lon]>=atomic_box(1) & [eddies.Lon]<=atomic_box(2);
-        lat_mask = [eddies.Lat]>=atomic_box(3) & [eddies.Lat]<=atomic_box(4);
+        lon_mask = [eddies.Lon]>=reg_box(1) & [eddies.Lon]<=reg_box(2);
+        lat_mask = [eddies.Lat]>=reg_box(3) & [eddies.Lat]<=reg_box(4);
         
         region_mask = logical(lon_mask.*lat_mask);
         
@@ -106,8 +106,9 @@ for k = 2:nreg
     end
     axis_ratio = MajorAxisLen./MinorAxisLen;
     
+    ncol=4;
     figure
-    subplot(2,3,1)
+    subplot(2,ncol,1+ncol)
     %plot([eddies_atomic.Stats.MajorAxisLength]./[eddies_atomic.Stats.MinorAxisLength],'*b');
     % eddies_stat = [eddies.Stats];
     % scatter([eddies_stat.MajorAxisLength],[eddies_stat.MinorAxisLength],[eddies.SurfaceArea]./1E4,...
@@ -125,10 +126,11 @@ for k = 2:nreg
     axis('square')
     xlabel('SLA Amplitude (cm)')
     ylabel('$\sqrt{Area}$ (km)','interpreter','latex')
+    ylim([0 2500]);
     hb=colorbar;
     set(get(hb,'xlabel'),'String', 'axis ratio');
     
-    subplot(2,3,2)
+    subplot(2,ncol,2+ncol)
     scatter(axis_ratio, sqrt(SurfArea), 20, SSH_Amplitude,'filled');
     colormap(jet);
     % xlim([0 20]);
@@ -143,8 +145,9 @@ for k = 2:nreg
     ylabel('$\sqrt{Area}$ (km)','interpreter','latex')
     hb=colorbar;
     set(get(hb,'xlabel'),'String', 'SLA Amplitude (cm)');
+    ylim([0 2500]);
     
-    subplot(2,3,3)
+    subplot(2,ncol,3+ncol)
     scatter(axis_ratio, SSH_Amplitude,  20, sqrt(SurfArea),'filled');
     colormap(jet);
     % xlim([0 20]);
@@ -167,7 +170,7 @@ for k = 2:nreg
     % size or magnitude of the eddies.
     
     % compute ratio and check the distribution:
-    subplot(2,3,4)
+    subplot(2,ncol,2)
     histogram(axis_ratio,[1:0.2:5]);
     axis('square')
     xlim([1 5]);
@@ -177,7 +180,7 @@ for k = 2:nreg
     set(gca,'xtick',[1:0.5:5]);
     grid on
     
-    subplot(2,3,5)
+    subplot(2,ncol,1)
     histogram(sqrt(SurfArea),[0:100:max(sqrt(SurfArea))]);
     axis('square')
     %xlim([0 5]);
@@ -187,7 +190,7 @@ for k = 2:nreg
     set(gca,'xtick',[0:250:2000]);
     grid on
     
-    subplot(2,3,6)
+    subplot(2,ncol,3)
     histogram(SSH_Amplitude,[0:0.2:5]);   % units is likely centimeter.
     axis('square')
     xlim([0 5]);
@@ -197,15 +200,26 @@ for k = 2:nreg
     set(gca,'xtick',[0:1:5]);
     grid on
     
+    subplot(2,ncol,4)
+    histogram(Orientation,[-90:10:90]);   % units is likely centimeter.
+    axis('square')
+    xlim([-90 90]);
+    xlabel('orientation (dgr)')
+    ylabel('counts')
+    title('Eddy Orientation (0°: East-West)');
+    set(gca,'xtick',[-90:30:90]);
+    grid on
+    
     figsvdir = './my_matlab/Figs';
     if ~exist(figsvdir, 'dir')
         mkdir(figsvdir)
     end
-    locstr = [num2str((atomic_box(1))) '_' num2str((atomic_box(2))) ...
-        '_' num2str((atomic_box(3))) '_' num2str((atomic_box(4)))];
+    locstr = [num2str((reg_box(1))) '_' num2str((reg_box(2))) ...
+        '_' num2str((reg_box(3))) '_' num2str((reg_box(4)))];
     figname = [upper(region_name) '_region_eddy_statics_' locstr '.jpg'];
     
-    xc_savefig(gcf, figsvdir, figname, [0 0 12 8]);
+    %pause
+    xc_savefig(gcf, figsvdir, figname, [0 0 12 6]);
     
 end
 

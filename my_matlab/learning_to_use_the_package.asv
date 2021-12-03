@@ -53,144 +53,175 @@ scan_multi(sla, double(ssh.latitude), double(ssh.longitude), ssh.time, 'anticyc'
 
 % visualize the results:
 % only show eddies in the selected area:
-atomic_box = [-58 -50, 10, 18];
+atomic_box = [-60 -50, 10, 18];
+cenNA_box = [-50, -40, 10, 18];
+eastNA_box = [-40, -30, 10, 18];
 
-% loop through all the data in the destination directory:
-files = dir([Eddy_destdir filesep 'anticyc*.mat']);
-filenames = {files.name};
-for i = 1:length(filenames)
-    matFN = filenames{i};
-    load([Eddy_destdir filesep matFN]);
-    
-    lon_mask = [eddies.Lon]>=atomic_box(1) & [eddies.Lon]<=atomic_box(2);
-    lat_mask = [eddies.Lat]>=atomic_box(3) & [eddies.Lat]<=atomic_box(4);
-    
-    region_mask = logical(lon_mask.*lat_mask);
-    
-    fieldN = fieldnames(eddies);
-    for ii = 1:length(fieldN)
-        FN = fieldN{ii};
-        tmp = [eddies.(FN)];
+region_names = {'atomic','cenNA','eastNA'};
+nreg = length(region_names);
+for k = 1:nreg
+    region_name = region_names{k};
+    eval(['reg_box =' region_name '_box;']);
+    % loop through all the data in the destination directory:
+    files = dir([Eddy_destdir filesep 'anticyc*.mat']);
+    filenames = {files.name};
+    for i = 1:length(filenames)
+        matFN = filenames{i};
+        load([Eddy_destdir filesep matFN]);
         
-        eddies_atomic{i}.(FN) = tmp(region_mask);
+        lon_mask = [eddies.Lon]>=reg_box(1) & [eddies.Lon]<=reg_box(2);
+        lat_mask = [eddies.Lat]>=reg_box(3) & [eddies.Lat]<=reg_box(4);
+        
+        region_mask = logical(lon_mask.*lat_mask);
+        
+        fieldN = fieldnames(eddies);
+        for ii = 1:length(fieldN)
+            FN = fieldN{ii};
+            tmp = [eddies.(FN)];
+            
+            eddies_atomic{i}.(FN) = tmp(region_mask);
+        end
     end
+    
+    % compile eddy statistics together:
+    Nday = length(eddies_atomic);
+    MajorAxisLen = [];
+    MinorAxisLen = [];
+    Orientation = [];
+    SurfArea = [];
+    PixelArea = [];
+    SSH_Amplitude = [];
+    MeanGeoSpeed = [];
+    Orientation = [];
+    
+    for i = 1:Nday
+        MajorAxisLen = [MajorAxisLen eddies_atomic{i}.Stats.MajorAxisLength];
+        MinorAxisLen = [MinorAxisLen eddies_atomic{i}.Stats.MinorAxisLength];
+        Orientation = [Orientation eddies_atomic{i}.Stats.Orientation];
+        SurfArea = [SurfArea eddies_atomic{i}.SurfaceArea];  % what is the units?? (km^2)
+        PixelArea = [PixelArea eddies_atomic{i}.Stats.Area];
+        SSH_Amplitude = [SSH_Amplitude eddies_atomic{i}.Amplitude];
+        MeanGeoSpeed = [MeanGeoSpeed eddies_atomic{i}.MeanGeoSpeed];
+        Orientation = [Orientation eddies_atomic{i}.Stats.Orientation];
+    end
+    axis_ratio = MajorAxisLen./MinorAxisLen;
+    
+    ncol=4;
+    figure
+    subplot(2,ncol,1+ncol)
+    %plot([eddies_atomic.Stats.MajorAxisLength]./[eddies_atomic.Stats.MinorAxisLength],'*b');
+    % eddies_stat = [eddies.Stats];
+    % scatter([eddies_stat.MajorAxisLength],[eddies_stat.MinorAxisLength],[eddies.SurfaceArea]./1E4,...
+    %     [eddies.Amplitude],'filled');
+    %scatter(MajorAxisLen, MinorAxisLen, SurfArea./1E4, SSH_Amplitude,'filled');
+    scatter(SSH_Amplitude, sqrt(SurfArea), 20, axis_ratio,'filled');
+    colormap(jet);
+    % xlim([0 20]);
+    % ylim([0 20]);
+    % hold on
+    % plot([0:20],[0:20],'--k');
+    grid on
+    %ylim([0 5])
+    %set(gca,'ytick',[0:1:5])
+    axis('square')
+    xlabel('SLA Amplitude (cm)')
+    ylabel('$\sqrt{Area}$ (km)','interpreter','latex')
+    hb=colorbar;
+    set(get(hb,'xlabel'),'String', 'axis ratio');
+    
+    subplot(2,ncol,2+ncol)
+    scatter(axis_ratio, sqrt(SurfArea), 20, SSH_Amplitude,'filled');
+    colormap(jet);
+    % xlim([0 20]);
+    % ylim([0 20]);
+    % hold on
+    % plot([0:20],[0:20],'--k');
+    grid on
+    % ylim([0 5])
+    % set(gca,'ytick',[0:1:5])
+    axis('square')
+    xlabel('axis ratio')
+    ylabel('$\sqrt{Area}$ (km)','interpreter','latex')
+    hb=colorbar;
+    set(get(hb,'xlabel'),'String', 'SLA Amplitude (cm)');
+    
+    subplot(2,ncol,3+ncol)
+    scatter(axis_ratio, SSH_Amplitude,  20, sqrt(SurfArea),'filled');
+    colormap(jet);
+    % xlim([0 20]);
+    % ylim([0 20]);
+    % hold on
+    % plot([0:20],[0:20],'--k');
+    grid on
+    axis('square')
+    xlabel('axis ratio')
+    ylabel('SLA Amplitude (cm)')
+    ylim([0 5])
+    set(gca,'ytick',[0:1:5])
+    hb=colorbar;
+    set(get(hb,'xlabel'),'String', '$\sqrt{Area}$ (km)','interpreter','latex');
+    
+    
+    
+    
+    % It doesn't seem like that the shape of the eddy is related to the
+    % size or magnitude of the eddies.
+    
+    % compute ratio and check the distribution:
+    subplot(2,ncol,2)
+    histogram(axis_ratio,[1:0.2:5]);
+    axis('square')
+    xlim([1 5]);
+    xlabel('Major Axis/Minor Axis')
+    ylabel('counts')
+    title('Eddy Shape');
+    set(gca,'xtick',[1:0.5:5]);
+    grid on
+    
+    subplot(2,ncol,1)
+    histogram(sqrt(SurfArea),[0:100:max(sqrt(SurfArea))]);
+    axis('square')
+    %xlim([0 5]);
+    xlabel('$\sqrt{Area}$ (km)','Interpreter','latex')
+    ylabel('counts')
+    title('Eddy Size');
+    set(gca,'xtick',[0:250:2000]);
+    grid on
+    
+    subplot(2,ncol,3)
+    histogram(SSH_Amplitude,[0:0.2:5]);   % units is likely centimeter.
+    axis('square')
+    xlim([0 5]);
+    xlabel('SLA Amplitude (cm)')
+    ylabel('counts')
+    title('Eddy Strength');
+    set(gca,'xtick',[0:1:5]);
+    grid on
+    
+     subplot(2,ncol,4)
+    histogram(SSH_Amplitude,[0:0.2:5]);   % units is likely centimeter.
+    axis('square')
+    xlim([0 5]);
+    xlabel('SLA Amplitude (cm)')
+    ylabel('counts')
+    title('Eddy Strength');
+    set(gca,'xtick',[0:1:5]);
+    grid on
+    
+    figsvdir = './my_matlab/Figs';
+    if ~exist(figsvdir, 'dir')
+        mkdir(figsvdir)
+    end
+    locstr = [num2str((reg_box(1))) '_' num2str((reg_box(2))) ...
+        '_' num2str((reg_box(3))) '_' num2str((reg_box(4)))];
+    figname = [upper(region_name) '_region_eddy_statics_' locstr '.jpg'];
+    
+    xc_savefig(gcf, figsvdir, figname, [0 0 12 8]);
+    
 end
 
-% compile eddy statistics together:
-Nday = length(eddies_atomic);
-MajorAxisLen = [];
-MinorAxisLen = [];
-Orientation = [];
-SurfArea = [];
-PixelArea = [];
-SSH_Amplitude = [];
-MeanGeoSpeed = [];
-Orientation = [];
-
-for i = 1:Nday
-    MajorAxisLen = [MajorAxisLen eddies_atomic{i}.Stats.MajorAxisLength];
-    MinorAxisLen = [MinorAxisLen eddies_atomic{i}.Stats.MinorAxisLength];
-    Orientation = [Orientation eddies_atomic{i}.Stats.Orientation];
-    SurfArea = [SurfArea eddies_atomic{i}.SurfaceArea];  % what is the units?? (km^2)
-    PixelArea = [PixelArea eddies_atomic{i}.Stats.Area];
-    SSH_Amplitude = [SSH_Amplitude eddies_atomic{i}.Amplitude];
-    MeanGeoSpeed = [MeanGeoSpeed eddies_atomic{i}.MeanGeoSpeed];
-    Orientation = [Orientation eddies_atomic{i}.Stats.Orientation];
-end
-axis_ratio = MajorAxisLen./MinorAxisLen;
-
-figure
-subplot(2,3,1)
-%plot([eddies_atomic.Stats.MajorAxisLength]./[eddies_atomic.Stats.MinorAxisLength],'*b');
-% eddies_stat = [eddies.Stats];
-% scatter([eddies_stat.MajorAxisLength],[eddies_stat.MinorAxisLength],[eddies.SurfaceArea]./1E4,...
-%     [eddies.Amplitude],'filled');
-%scatter(MajorAxisLen, MinorAxisLen, SurfArea./1E4, SSH_Amplitude,'filled');
-scatter(SSH_Amplitude, sqrt(SurfArea), 20, axis_ratio,'filled');
-colormap(jet);
-% xlim([0 20]);
-% ylim([0 20]);
-% hold on
-% plot([0:20],[0:20],'--k');
-grid on
-%ylim([0 5])
-%set(gca,'ytick',[0:1:5])
-axis('square')
-xlabel('SLA Amplitude (cm)')
-ylabel('$\sqrt{Area}$ (km)','interpreter','latex')
-hb=colorbar;
-set(get(hb,'xlabel'),'String', 'axis ratio');
-
-subplot(2,3,2)
-scatter(axis_ratio, sqrt(SurfArea), 20, SSH_Amplitude,'filled');
-colormap(jet);
-% xlim([0 20]);
-% ylim([0 20]);
-% hold on
-% plot([0:20],[0:20],'--k');
-grid on
-% ylim([0 5])
-% set(gca,'ytick',[0:1:5])
-axis('square')
-xlabel('axis ratio')
-ylabel('$\sqrt{Area}$ (km)','interpreter','latex')
-hb=colorbar;
-set(get(hb,'xlabel'),'String', 'SLA Amplitude (cm)');
-
-subplot(2,3,3)
-scatter(axis_ratio, SSH_Amplitude,  20, sqrt(SurfArea),'filled');
-colormap(jet);
-% xlim([0 20]);
-% ylim([0 20]);
-% hold on
-% plot([0:20],[0:20],'--k');
-grid on
-axis('square')
-xlabel('axis ratio')
-ylabel('SLA Amplitude (cm)')
-ylim([0 5])
-set(gca,'ytick',[0:1:5])
-hb=colorbar;
-set(get(hb,'xlabel'),'String', '$\sqrt{Area}$ (km)','interpreter','latex');
-
-
-
-
-% It doesn't seem like that the shape of the eddy is related to the
-% size or magnitude of the eddies. 
-
-% compute ratio and check the distribution:
-subplot(2,3,4)
-histogram(axis_ratio,[1:0.2:5]);
-axis('square')
-xlim([1 5]);
-xlabel('Major Axis/Minor Axis')
-ylabel('counts')
-title('Eddy Shape');
-grid on
-
-subplot(2,3,5)
-histogram(sqrt(SurfArea),);
-axis('square')
-%xlim([0 5]);
-xlabel('Surface Area (km^2)')
-ylabel('counts')
-title('Eddy Size');
-%set(gca,'xtick',[0:1:5]);
-grid on
-
-subplot(2,3,6)
-histogram(SSH_Amplitude,[0:0.2:5]);   % units is likely centimeter.
-axis('square')
-xlim([0 5]);
-xlabel('SLA Amplitude (cm)')
-ylabel('counts')
-title('Eddy Strength');
-set(gca,'xtick',[0:1:5]);
-grid on
-
-
-
+% interesting, the eddy statics are about the same in these different
+% region..
 
 
 % My main interests are: the size of the eddies (represented by surface area), 
